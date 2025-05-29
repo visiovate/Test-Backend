@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") 
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String
+  profileImage  String?
+  isVerified    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Address
+  street        String?
+  city          String?
+  state         String?
+  zipCode       String?
+  latitude      Float?
+  longitude     Float?
+  
+  // Relations
+  bookings      Booking[]
+  reviews       Review[]
+  savedMaids    SavedMaid[]
+  notifications Notification[]
+  
+  @@map("users")
+}
+
+model Maid {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  password     String
+  firstName    String
+  lastName     String
+  phone        String
+  profileImage String?
+  bio          String?
+  experience   Int       @default(0)
+  hourlyRate   Float
+  services     String[]  // JSON array
+  languages    String[]  // JSON array
+  serviceAreas String[]  // JSON array
+  isActive     Boolean   @default(true)
+  isVerified   Boolean   @default(false)
+  ratingAvg    Float     @default(0)
+  ratingCount  Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Availability (JSON object)
+  availability Json?
+  
+  // Relations
+  bookings      Booking[]
+  reviews       Review[]
+  savedByUsers  SavedMaid[]
+  notifications Notification[]
+  
+  @@map("maids")
+}
+
+model Booking {
+  id                String    @id @default(uuid())
+  userId            String
+  maidId            String
+  services          String[]  // JSON array
+  duration          Float?
+  specialInstructions String?
+  scheduledDate     DateTime
+  scheduledTime     String
+  
+  // Address
+  street            String
+  city              String
+  state             String
+  zipCode           String
+  latitude          Float?
+  longitude         Float?
+  
+  // Pricing
+  hourlyRate        Float
+  estimatedHours    Float
+  subtotal          Float
+  serviceFee        Float
+  total             Float
+  
+  status            BookingStatus @default(PENDING)
+  paymentStatus     PaymentStatus @default(PENDING)
+  notes             String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  acceptedAt        DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  
+  // Relations
+  user              User     @relation(fields: [userId], references: [id])
+  maid              Maid     @relation(fields: [maidId], references: [id])
+  review            Review?
+  payment           Payment?
+  
+  @@map("bookings")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  maidId    String
+  bookingId String   @unique
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  maid      Maid     @relation(fields: [maidId], references: [id])
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  
+  @@map("reviews")
+}
+
+model SavedMaid {
+  id        String   @id @default(uuid())
+  userId    String
+  maidId    String
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user      User @relation(fields: [userId], references: [id])
+  maid      Maid @relation(fields: [maidId], references: [id])
+  
+  @@unique([userId, maidId])
+  @@map("saved_maids")
+}
+
+model Notification {
+  id            String           @id @default(uuid())
+  recipientId   String
+  recipientType RecipientType
+  type          NotificationType
+  title         String
+  message       String
+  data          Json?
+  isRead        Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  
+  // Relations
+  user          User? @relation(fields: [recipientId], references: [id], map: "notifications_user_fkey")
+  maid          Maid? @relation(fields: [recipientId], references: [id], map: "notifications_maid_fkey")
+  
+  @@map("notifications")
+}
+
+model Payment {
+  id              String    @id @default(uuid())
+  bookingId       String    @unique
+  stripePaymentId String    @unique
+  amount          Float
+  currency        String    @default("usd")
+  status          PaymentStatus
+  refunded        Boolean   @default(false)
+  refundAmount    Float?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  booking         Booking   @relation(fields: [bookingId], references: [id])
+  
+  @@map("payments")
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum RecipientType {
+  USER
+  MAID
+}
+
+enum NotificationType {
+  BOOKING_REQUEST
+  BOOKING_ACCEPTED
+  BOOKING_REJECTED
+  BOOKING_CANCELLED
+  BOOKING_COMPLETED
+  BOOKING_REMINDER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+} 
