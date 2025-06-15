@@ -40,6 +40,7 @@ model Service {
   isActive    Boolean        @default(true)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  price       Json          @default("{\"1BHK\": 150.00, \"2BHK\": 250.00, \"3BHK\": 350.00, \"4BHK\": 450.00}")
   bookings    Booking[]      @relation("BookingToService")
   maids       Maid[]         @relation("MaidServices")
   prices      ServicePrice[]

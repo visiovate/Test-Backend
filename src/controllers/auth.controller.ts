@@ -24,44 +24,66 @@ const generateRefreshToken = (payload: any) => {
 
 // Register user
 export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
+  console.log('=== Registration Process Started ===');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  
   try {
     const { email, password, firstName, lastName, phone, address } = req.body;
 
+    // Validate required fields
+    if (!email || !password || !firstName || !lastName || !phone) {
+      console.log('Missing required fields:', { email: !!email, password: !!password, firstName: !!firstName, lastName: !!lastName, phone: !!phone });
+      throw new AppError(400, 'Missing required fields');
+    }
+
     // Check if user exists
+    console.log('Checking for existing user with email:', email);
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
+      console.log('User already exists with email:', email);
       throw new AppError(409, 'Email already registered');
     }
 
     // Hash password
+    console.log('Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 12);
+    console.log('Password hashed successfully');
 
     // Create user
+    console.log('Creating new user...');
+    const userData = {
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      phone,
+      ...(address && {
+        street: address.street,
+        city: address.city,
+        state: address.state,
+        zipCode: address.zipCode,
+        latitude: address.latitude,
+        longitude: address.longitude,
+      }),
+    };
+    console.log('User data prepared:', { ...userData, password: '[REDACTED]' });
+
     const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        phone,
-        ...(address && {
-          street: address.street,
-          city: address.city,
-          state: address.state,
-          zipCode: address.zipCode,
-          latitude: address.latitude,
-          longitude: address.longitude,
-        }),
-      },
+      data: userData,
     });
 
+    console.log('User created successfully:', { userId: user.id });
+
     // Generate tokens
+    console.log('Generating tokens...');
     const token = generateToken({ id: user.id, type: 'user' });
     const refreshToken = generateRefreshToken({ id: user.id, type: 'user' });
+    console.log('Tokens generated successfully');
 
+    console.log('=== Registration Process Completed Successfully ===');
     res.status(201).json({
       success: true,
       data: {
@@ -77,7 +99,20 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
       },
     });
   } catch (error) {
-    next(error);
+    console.error('=== Registration Process Failed ===');
+    console.error('Error details:', error);
+    
+    if (error instanceof AppError) {
+      console.error('AppError:', {
+        statusCode: error.statusCode,
+        message: error.message,
+        errors: error.errors
+      });
+      next(error);
+    } else {
+      console.error('Unknown error:', error);
+      next(new AppError(500, 'Registration failed', false, error));
+    }
   }
 };
 
@@ -239,15 +274,21 @@ export const logout = async (req: Request, res: Response) => {
 // Get profile
 export const getProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?.id;
-    const userType = req.user?.type;
+    console.log('Getting profile for user:', req.user);
+    
+    if (!req.user) {
+      throw new AppError(401, 'Authentication required');
+    }
+
+    const userId = req.user.id;
+    const userType = req.user.type;
 
     let profile;
     if (userType === 'user') {
       profile = await prisma.user.findUnique({
         where: { id: userId },
       });
-    } else {
+    } else if (userType === 'maid') {
       profile = await prisma.maid.findUnique({
         where: { id: userId },
       });
@@ -257,13 +298,18 @@ export const getProfile = async (req: Request, res: Response, next: NextFunction
       throw new AppError(404, 'Profile not found');
     }
 
+    // Remove sensitive information
+    const { password, ...profileWithoutPassword } = profile;
+
     res.json({
       success: true,
       data: {
-        profile,
-      },
+        profile: profileWithoutPassword,
+        type: userType
+      }
     });
   } catch (error) {
+    console.error('Get profile error:', error);
     next(error);
   }
 };
