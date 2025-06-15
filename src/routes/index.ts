@@ -8,6 +8,8 @@ import notificationRoutes from './notification.routes';
 import paymentRoutes from './payment.routes';
 import webhookRoutes from './webhook.routes';
 import searchRoutes from './search.routes';
+import testRoutes from './test.routes';
+import serviceRoutes from './service.routes';
 import { globalRateLimiter } from '../middleware/rateLimit.middleware';
 
 const router = Router();
@@ -15,15 +17,17 @@ const router = Router();
 // Apply global rate limiter
 router.use(globalRateLimiter);
 
-// API routes
-router.use('/auth', authRoutes);
-router.use('/users', userRoutes);
-router.use('/maids', maidRoutes);
-router.use('/bookings', bookingRoutes);
-router.use('/reviews', reviewRoutes);
-router.use('/notifications', notificationRoutes);
-router.use('/payments', paymentRoutes);
-router.use('/search', searchRoutes);
+// API routes with their prefixes
+router.use('/auth', authRoutes);        // Authentication routes
+router.use('/users', userRoutes);       // User management routes
+router.use('/maids', maidRoutes);       // Maid service routes
+router.use('/bookings', bookingRoutes); // Booking management routes
+router.use('/reviews', reviewRoutes);   // Review management routes
+router.use('/notifications', notificationRoutes); // Notification routes
+router.use('/payments', paymentRoutes); // Payment processing routes
+router.use('/search', searchRoutes);    // Search functionality routes
+router.use('/test', testRoutes);        // Test routes
+router.use('/', serviceRoutes);         // Service routes
 
 // Webhook routes (no rate limiting for webhooks)
 router.use('/webhooks', webhookRoutes);
@@ -33,7 +37,9 @@ router.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
+    version: '1.0.0'
   });
 });
 
+// Export the router setup function
 export const setupRoutes = () => router; 

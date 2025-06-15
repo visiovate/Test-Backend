@@ -31,18 +31,19 @@ app.use(config.apiPrefix, setupRoutes());
 app.use(errorHandler);
 
 // Socket.IO setup
-const io = initializeSocket(httpServer);
+// const io = initializeSocket(httpServer);
 
 // Redis adapter for Socket.IO
-const pubClient = new Redis(config.redis.url);
-const subClient = pubClient.duplicate();
+// const pubClient = new Redis(config.redis.url);
+// const subClient = pubClient.duplicate();
 
-Promise.all([pubClient, subClient]).then(() => {
-  io.adapter(createAdapter(pubClient, subClient));
-});
+// Promise.all([pubClient, subClient]).then(() => {
+//   io.adapter(createAdapter(pubClient, subClient));
+// });
 
 // Start server
 const PORT = config.port;
 httpServer.listen(PORT, () => {
   logger.info(`Server is running on port ${PORT}`);
+  logger.info(`API is available at http://localhost:${PORT}${config.apiPrefix}`);
 }); 

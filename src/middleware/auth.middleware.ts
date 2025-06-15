@@ -18,16 +18,34 @@ passport.use(
     },
     async (payload, done) => {
       try {
-        const user = await prisma.user.findUnique({
-          where: { id: payload.id },
-        });
+        console.log('JWT Payload:', payload);
+        
+        let user;
+        if (payload.type === 'user') {
+          user = await prisma.user.findUnique({
+            where: { id: payload.id },
+          });
+        } else if (payload.type === 'maid') {
+          user = await prisma.maid.findUnique({
+            where: { id: payload.id },
+          });
+        }
 
         if (!user) {
+          console.log('User not found for payload:', payload);
           return done(null, false);
         }
 
-        return done(null, user);
+        // Add type to user object
+        const userWithType = {
+          ...user,
+          type: payload.type
+        };
+
+        console.log('Authenticated user:', userWithType);
+        return done(null, userWithType);
       } catch (error) {
+        console.error('JWT Strategy error:', error);
         return done(error, false);
       }
     }
@@ -58,7 +76,13 @@ passport.use(
           return done(null, false, { message: 'Invalid credentials' });
         }
 
-        return done(null, user);
+        // Add type to user object
+        const userWithType = {
+          ...user,
+          type: 'user'
+        };
+
+        return done(null, userWithType);
       } catch (error) {
         return done(error);
       }
@@ -90,7 +114,13 @@ passport.use(
           return done(null, false, { message: 'Invalid credentials' });
         }
 
-        return done(null, maid);
+        // Add type to maid object
+        const maidWithType = {
+          ...maid,
+          type: 'maid'
+        };
+
+        return done(null, maidWithType);
       } catch (error) {
         return done(error);
       }
@@ -102,13 +132,16 @@ export const authenticate = (strategy: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate(strategy, { session: false }, (err, user, info) => {
       if (err) {
+        console.error('Authentication error:', err);
         return next(err);
       }
 
       if (!user) {
+        console.error('Authentication failed:', info);
         return next(new AppError(401, info?.message || 'Authentication failed'));
       }
 
+      console.log('Setting user in request:', user);
       req.user = user;
       next();
     })(req, res, next);

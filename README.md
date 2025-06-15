@@ -38,8 +38,7 @@ A robust backend system for a maid booking platform built with Node.js, Express.
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/sweepro-backend.git
-cd sweepro-backend
+https://github.com/visiovate/Test-Backend.git
 ```
 
 2. Install dependencies:
