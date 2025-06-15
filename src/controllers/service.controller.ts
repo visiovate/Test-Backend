@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 
 export class ServiceController {
   async createService(req: Request, res: Response, next: NextFunction) {
+    console.log('Creating service with body:', req.body);
     try {
       const { name, description, isActive } = req.body;
       // Check if service already exists

@@ -27,7 +27,7 @@ router.use('/notifications', notificationRoutes); // Notification routes
 router.use('/payments', paymentRoutes); // Payment processing routes
 router.use('/search', searchRoutes);    // Search functionality routes
 router.use('/test', testRoutes);        // Test routes
-router.use('/', serviceRoutes);         // Service routes
+router.use('/services', serviceRoutes);         // Service routes
 
 // Webhook routes (no rate limiting for webhooks)
 router.use('/webhooks', webhookRoutes);
